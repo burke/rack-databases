@@ -1,6 +1,10 @@
 module Rack
   class Databases
 
+    def self.current
+      @current ||= 'default'
+    end 
+    
     def initialize(app, options = {})
       @app = app
     end
@@ -9,9 +13,10 @@ module Rack
       request = Rack::Request.new(env)
       if request.path =~ /^\/__database__\/(.*)/
         begin 
-          ActiveRecord::Base.establish_connection($1)
-          $current_database = $1
-          [200, {'Content-Type' => 'text/plain'}, ["Switched to #$1 database"]]
+          nxt = $1
+          ActiveRecord::Base.establish_connection(nxt)
+          Rack::Databases.instance_variable_set("@current", nxt)
+          [200, {'Content-Type' => 'text/plain'}, ["Switched to #{nxt} database"]]
         rescue => ex
           [500, {'Content-Type' => 'text/plain'}, [ex.message]]
         end 
